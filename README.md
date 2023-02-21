@@ -51,57 +51,54 @@ Examples can be found at: https://github.com/brunerd/shef
 
 ## Examples
 
-If you want to save the string in a script, choose a quoting style, `-Qs` for example is single quotes and the encoding style is `-Ex` for hexdecimal.
+If you want to save the string in a script, choose a quoting style, `-Qs` for example is single quotes and the encoding style is `-E0` for octal with leading zeroes. We are using a here doc, but you can also give a path to any text file instead.
 ```
-% shef -Ex -Qs <<-'EOF'                                                                                        
+$ shef -E0 -Qs <<-EOF                                                                                        
 🛑 Stop.
 ⚙️  Run your updates!
-🙏 Thanks!
+🙏 Thanks!      
 EOF
-'\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates!\n\xF0\x9F\x99\x8F Thanks!'
+'\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates!\n\0360\0237\0231\0217 Thanks!'
 
-# Assign the string data to a variable and reconstitute the original string using `echo -e`
-% message='\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates!\n\xF0\x9F\x99\x8F Thanks!'
+# Assign the data to a variable and reconstitute the original string using `echo -e`
+
+% message='\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates!\n\0360\0237\0231\0217 Thanks!'
 % echo -e "${message}"
-
 🛑 Stop.
 ⚙️  Run your updates!
 🙏 Thanks!
 
 ```
 
-If you are passing via Jamf the default behavior is to **not** quote for shell and encoding with leading 0 octal, which is a bit longer than hex but more widely recognized and processed by various shells.
+If you are using the output for a non-shell tool like Jamf, use the default behavior of **no quotes** (`-Qn`) and hexadecimal encoding (`-Ex`):
 ```
-$ shef <<-'EOF'                                                                                        
+$ shef <<-EOF                                                                                        
 🛑 Stop.
 ⚙️  Run your updates!
 🙏 Thanks!
 EOF
-\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates!\n\0360\0237\0231\0217 Thanks!
-#this data is not escaped because it will be passed to a script using a non-shell tool like a Jamf policy argument
-#the recieving script will need to apply `echo -e` to the incoming string
+\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates!\n\xF0\x9F\x99\x8F Thanks!
+
+#this data is not quoted nor are special characters escaped it will be passed using non-shell tool like a Jamf policy argument
+#the recieving script will need to apply `echo -e` to the incoming string to reconstitute it
 ```
 
-You can also choose to not escape `$` within double quotes. You can then leverage variable expansion within the string at runtime. In this here-doc example note that you must use the single quoted delimiter <<-'EOF' so $ is not processed.
+You can also choose to **not** escape `$` within double quotes. You can then leverage variable expansion during runtime. In this here-doc example note that you must use the single quoted delimiter <<-'EOF' so $ is not processed immediately.
 ```
-$ shef -Qd -V <<-'EOF'                                                                                        
+$ shef -Ex -Qd -V <<-'EOF'                                                                                        
 🛑 Stop.
 ⚙️  Run your updates!
-🙏 Thanks $USER!
+🙏 Thanks $(stat -f %Su /dev/console)!
 EOF
-"\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates"\!"\n\0360\0237\0231\0217 Thanks $USER"\!""
+"\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 
-#notice that $ is not \$, this is from the -V option flag
-$ echo -e "\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates"\!"\n\0360\0237\0231\0217 Thanks $USER"\!""
+$ echo -e "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 🛑 Stop.
 ⚙️  Run your updates!
 🙏 Thanks brunerd!
-
 ```
 
-Note `shef` escapes `!` to an over-bearing degree to guard against misinterpretation by shells as **history expansion**. This makes it possible to test strings out in an interactive shell _without_ needing to turn off history expansion with `set +H`.
-
-
+Note `shef` escapes `!` to an over-bearing degree to guard against misinterpretation by shells as **history expansion**. This makes it easier to test out strings in an interactive shell _without_ needing to turn **off** history expansion (`set +H`), of course maybe you shouldn't use so many exclamation marks either!
 
 
 
