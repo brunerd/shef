@@ -14,6 +14,10 @@ function shef()(
 	versionLine="shef ($version) - Shell Encoder and Formatter (https://github.com/brunerd/shef)"
 	helpText='Usage: shef [options] [input]\n\nEncoding Options:\n -E <option>\n    0 \\0nnn utf-8 octal [DEFAULT]\n    o \\nnn utf-8 octal \n    x \\xnn utf-8 hexadecimal\n    U \\Unnnnnnnn code point in hexdecimal\n\n Encoding workability varies between shells:\n  Octal encoding with leading zeroes(\\0nnn) works well across multiple shells and quote styles.\n  The other octal (\\nnn) works within ANSI-C quotes $'\''...'\'' for bash and zsh and quotes in dash.\n  Hex encoding (\\xnn) works well in bash and zsh and within a variety of quoting styles.\n  Unicode code points work in bash and zsh versions 4+\n\nQuoting Options:\n -Q <option> \n    d double quoted and escaped for shell\n    s single quoted and escaped for shell\n    u un-quoted and escaped for shell \n    D Dollar-sign (ANSI-C $'\'''\'') quoted and escaped\n    n not quoted or escaped for shell [DEFAULT]\n    \n  By default only solidus \\ and chars <0x20 and >0x7E will be escaped\n   This output is for non-shell tools that can pass this data to shell scripts for further processing\n  If output is intended for use as a shell parameter or variable, then specify a quoting style.\n    Quotes are included in output and all special shell characters are escaped.\n  The original string can usually be re-constituted using `echo -e <encoded string>`\n\nOutput Options:\n  -a Encode all characters (overrides -U)\n  -U Leave these whitespace formatting characters raw and un-encoded: \\b \\f \\n \\r \\t \\v\n  -V Variable character $ is not escaped within double quotes\n  -v print version and exit\n\n  All whitespace (except space) is encoded in ANSI-C style by default\n    Bell \\a and escape \\e are always encoded.\n\nInput:\n Can be a file path, string, file redirection, here-doc, here-string, or piped input.\n \nExamples can be found at: https://github.com/brunerd/shef'
 
+	#defaults if not specified
+	default_encoding="x"
+	default_quoting="n"
+
 	#enter with no argument to get the help
 	function printHelp()(
 		echo "${versionLine}" >&2
@@ -21,7 +25,7 @@ function shef()(
 	)
 
 	#options processing	
-	while getopts ":aE:hUvVC:Q:" option; do
+	while getopts ":ahvUVE:Q:" option; do
 		case "${option}" in
 			#encode all
 			'a')flag_a=1;;
@@ -34,7 +38,7 @@ function shef()(
 			#exempt variable escaping in double quotes
 			'V')exvar_flag=1;;
 			#Encoding style
-			"E")
+			'E')
 				if [ -z "${encodeType}" ]; then
 					case "${OPTARG}" in
 						'x'|'U'|0|'o') encodeType="${OPTARG}";;
@@ -43,7 +47,7 @@ function shef()(
 				fi
 			;;
 			#Quoting for shell style
-			"Q")
+			'Q')
 				if [ -z "${quotingType}" ]; then
 					case "${OPTARG}" in
 						'd'|'s'|'u'|'D'|'n') quotingType="${OPTARG}";;
@@ -78,8 +82,8 @@ function shef()(
 	fi
 
 	
-	#default quoting is none
-	case "${quotingType:=n}" in
+	#fall back to default quoting type
+	case "${quotingType:=$default_quoting}" in
 		#double quotes for shell
 		'd')
 			#exclamation escape
@@ -130,7 +134,7 @@ function shef()(
 			#quote type ''
 			quote="'"
 		;;	
-		#no quotes, for use as parameter in non-shell tool. Escape only backslash, Unicode <0x20 >0x7E, and whitespace
+ 		#no quotes, for use as parameter in non-shell tool. Escape only backslash, Unicode <0x20 >0x7E, and whitespace \a \b \e \f \n \r \t
 		'n')
 			#solidus escape
 			sol_esc='\'
@@ -186,7 +190,7 @@ function shef()(
 		#encode if -a (all) OR outside printable ASCII range (less than 0x20 or greater than 0x7E)
 		if ((flag_a)) || [[ "${char}" < $'\x20' ]] || [[ "${char}" > $'\x7E' ]]; then			
 			#encode one of these ways
-			case "${encodeType:=0}" in
+			case "${encodeType:=$default_encoding}" in
 				#utf-8 octal \nnn (-o or -O) or \0nnn (-0)
 				"o"|"0")
 					[ "${encodeType}" = "0" ] && zero="0"
