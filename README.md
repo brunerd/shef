@@ -1,5 +1,5 @@
 # shef
-Shell Encoder and Formatter - Transform text containing into 7-bit ASCII using a variety of encoding and quoting styles. Output can be used in shell scripts or passed into shell script by other tools that don't require shell quoting.
+Shell Encoder and Formatter - Transform text into 7-bit ASCII using a variety of encoding and quoting styles. Output can be used in shell scripts or passed into shell script by other tools that don't require shell quoting. Useful for systems that don't support 4-byte UTF-8 encoded characters. Encode your text with `shef` and reconstitute the original string using `echo -e` or similar methods.
 
 # Help Output
 ```
