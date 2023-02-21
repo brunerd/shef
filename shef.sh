@@ -144,6 +144,9 @@ function shef()(
 	#encode whitespace by default for all (-U to suppress)
 	[ -z "${wsenc_flag}" ] && wsenc_flag=1
 
+	#set octal leading zero for output loop later
+	[ "${encodeType}" = "0" ] && zero="0"
+
 	#get length (use -m for multibyte Unicode chars NOT -c byte count)
 	length=$(($(printf "%s" "${1}" | wc -m)))
 
@@ -193,7 +196,6 @@ function shef()(
 			case "${encodeType:=$default_encoding}" in
 				#utf-8 octal \nnn (-o or -O) or \0nnn (-0)
 				"o"|"0")
-					[ "${encodeType}" = "0" ] && zero="0"
 					for byte in $(echo -En "${char}" | xxd -p -c1 -u); do 
 						#use shell hex conversion along with printf
 						printf "${prtf_esc}""\\\\${zero}%03o" $((0x${byte}))
