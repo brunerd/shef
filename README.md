@@ -5,7 +5,6 @@ Check my blog for other musings: https://www.brunerd.com/blog/category/projects/
 
 ## Help Output
 ```
-shef (1.0) - Shell Encoder and Formatter (https://github.com/brunerd/shef)
 Usage: shef [options] [input]
 
 Encoding Options:
@@ -43,6 +42,7 @@ Output Options:
   -U Leave these whitespace formatting characters raw and un-encoded: \b \f \n \r \t \v
   -V Variable character $ is not escaped within double quotes
   -v print version and exit
+  -W Encode whitespace only, pass-thru all others characters, quoting still applies
 
   All whitespace (except space) is encoded in ANSI-C style by default
     Bell \a and escape \e are always encoded.
@@ -93,14 +93,14 @@ You can also choose to **not** escape `$` within double quotes. You can then lev
 ```
 $ shef -Ex -Qd -V <<-'EOF'                                                                                        
 🛑 Stop.
-⚙️  Run your updates!
+⚙️ Run your updates!
 🙏 Thanks $(stat -f %Su /dev/console)!
 EOF
 "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 
 $ echo -e "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 🛑 Stop.
-⚙️  Run your updates!
+⚙️ Run your updates!
 🙏 Thanks brunerd!
 ```
 
