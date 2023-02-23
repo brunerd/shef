@@ -55,15 +55,15 @@ Examples can be found at: https://github.com/brunerd/shef
 
 ## Examples
 
-### "Non-Quoted" for Jamf scripts parameters
-If you are using the output for a non-shell tool like Jamf, use the default behavior of **no quotes** (`-Qn`) and hexadecimal encoding (`-Ex`):
+### "Not Quoted" for use in Jamf script parameters
+If you are using the output for a non-shell tool like Jamf, which doesn't require escaping special characters, just use the default behavior of **no quotes** (`-Qn`) and hexadecimal encoding (`-Ex`), this will encode Unicode, backslashes and whitespace only:
 ```
 $ shef <<-EOF                                                                                        
 🛑 Stop.
-⚙️  Run your updates!
+⚙️ Run your updates!
 🙏 Thanks!
 EOF
-\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates!\n\xF0\x9F\x99\x8F Thanks!
+\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates!\n\xF0\x9F\x99\x8F Thanks!
 
 #this data is not quoted nor are special shell characters escaped it will be passed using non-shell tool like Jamf
 #the recieving script however, will need to apply `echo -e` to the incoming string to reconstitute it
@@ -74,16 +74,16 @@ If you want to save a string for a script variable, choose a quoting style, `-Qs
 ```
 $ shef -E0 -Qs <<-EOF                                                                                        
 🛑 Stop.
-⚙️  Run your updates!
+⚙️ Run your updates!
 🙏 Thanks!      
 EOF
-'\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates!\n\0360\0237\0231\0217 Thanks!'
+'\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217 Run your updates!\n\0360\0237\0231\0217 Thanks!'
 
 # Assign the data to a variable and reconstitute the original string using `echo -e`
-% message='\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217  Run your updates!\n\0360\0237\0231\0217 Thanks!'
+% message='\0360\0237\0233\0221 Stop.\n\0342\0232\0231\0357\0270\0217 Run your updates!\n\0360\0237\0231\0217 Thanks!'
 % echo -e "${message}"
 🛑 Stop.
-⚙️  Run your updates!
+⚙️ Run your updates!
 🙏 Thanks!
 
 ```
@@ -96,9 +96,9 @@ $ shef -Ex -Qd -V <<-'EOF'
 ⚙️  Run your updates!
 🙏 Thanks $(stat -f %Su /dev/console)!
 EOF
-"\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
+"\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 
-$ echo -e "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F  Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
+$ echo -e "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates"\!"\n\xF0\x9F\x99\x8F Thanks $(stat -f %Su /dev/console)"\!""
 🛑 Stop.
 ⚙️  Run your updates!
 🙏 Thanks brunerd!
