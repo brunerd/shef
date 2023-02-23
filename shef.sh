@@ -12,7 +12,7 @@ LICENSE_BLOCK
 function shef()(
 	version="1.0"
 	versionLine="shef ($version) - Shell Encoder and Formatter (https://github.com/brunerd/shef)"
-	helpText='Usage: shef [options] [input]\n\nEncoding Options:\n -E <option>\n    x \\xnn utf-8 hexadecimal [DEFAULT]\n    0 \\0nnn utf-8 octal\n    o \\nnn utf-8 octal\n    U \\Unnnnnnnn code point in hexdecimal\n\n Encoding workability varies between shells:\n  Hex encoding (\\xnn) is compact and works well in bash, sh, and zsh and within a variety of quoting styles.\n  Octal encoding with leading zeroes(\\0nnn) works well across multiple shells and quote styles.\n  The other octal (\\nnn) works within ANSI-C quotes $'\''...'\'' for bash and zsh and quotes in dash.\n  Unicode code points work in bash and zsh versions 4+\n\nQuoting Options:\n -Q <option> \n    n not quoted or escaped for shell [DEFAULT]\n    d double quoted and escaped for shell\n    s single quoted and escaped for shell\n    u un-quoted and escaped for shell \n    D Dollar-sign single quoted (ANSI-C $'\'''\'') for shell\n    \n  By default only solidus \\ is escaped and character <0x20 and >0x7E encoded without enclosing quotes\n   This output is for non-shell tools that can then pass the data to shell scripts for further processing\n\n  If output is intended for use as a shell parameter or variable, then specify a quoting style\n    Quotes are included in output and all special shell characters are escaped.\n\n  The original string can usually be re-constituted using `echo -e <encoded string>`\n  Dollar sign (ANSI-C) quotes use `echo -E $'\''<string>'\''` to avoid over-processing\n\nOutput Options:\n  -a Encode all characters (overrides -U)\n  -U Leave these whitespace formatting characters raw and un-encoded: \\b \\f \\n \\r \\t \\v\n  -V Variable character $ is not escaped within double quotes\n  -v print version and exit\n\n  All whitespace (except space) is encoded in ANSI-C style by default\n    Bell \\a and escape \\e are always encoded.\n\nInput:\n Can be a file path, string, file redirection, here-doc, here-string, or piped input.\n \nExamples can be found at: https://github.com/brunerd/shef'
+	helpText='Usage: shef [options] [input]\n\nEncoding Options:\n -E <option>\n    x \\xnn utf-8 hexadecimal [DEFAULT]\n    0 \\0nnn utf-8 octal\n    o \\nnn utf-8 octal\n    U \\Unnnnnnnn code point in hexdecimal\n\n Encoding workability varies between shells:\n  Hex encoding (\\xnn) is compact and works well in bash, sh, and zsh and within a variety of quoting styles.\n  Octal encoding with leading zeroes(\\0nnn) works well across multiple shells and quote styles.\n  The other octal (\\nnn) works within ANSI-C quotes $'\''...'\'' for bash and zsh and quotes in dash.\n  Unicode code points work in bash and zsh versions 4+\n\nQuoting Options:\n -Q <option> \n    n not quoted or escaped for shell [DEFAULT]\n    d double quoted and escaped for shell\n    s single quoted and escaped for shell\n    u un-quoted and escaped for shell \n    D Dollar-sign single quoted (ANSI-C $'\'''\'') for shell\n    \n  By default only solidus \\ is escaped and character <0x20 and >0x7E encoded without enclosing quotes\n   This output is for non-shell tools that can then pass the data to shell scripts for further processing\n\n  If output is intended for use as a shell parameter or variable, then specify a quoting style\n    Quotes are included in output and all special shell characters are escaped.\n\n  The original string can usually be re-constituted using `echo -e <encoded string>`\n  Dollar sign (ANSI-C) quotes use `echo -E $'\''<string>'\''` to avoid over-processing\n\nOutput Options:\n  -a Encode all characters (overrides -U)\n  -U Leave these whitespace formatting characters raw and un-encoded: \\b \\f \\n \\r \\t \\v\n  -V Variable character $ is not escaped within double quotes\n  -v print version and exit\n  -W Encode whitespace only, pass-thru all others characters, quoting still applies\n\n  All whitespace (except space) is encoded in ANSI-C style by default\n    Bell \\a and escape \\e are always encoded.\n\nInput:\n Can be a file path, string, file redirection, here-doc, here-string, or piped input.\n \nExamples can be found at: https://github.com/brunerd/shef'
 
 	#defaults if not specified
 	default_encoding="x"
@@ -25,16 +25,16 @@ function shef()(
 	)
 
 	#options processing	
-	while getopts ":ahvUVE:Q:" option; do
+	while getopts ":ahvPUVWE:Q:" option; do
 		case "${option}" in
 			#encode all
-			'a')flag_a=1;;
-			#leave whitespace Untouched
-			'U')wsenc_flag=0;;
+			'a')enc_all=1;;
 			#help
 			'h')printHelp;exit 0;;
 			#version
 			'v')echo "${versionLine}"; exit 0;;
+			#leave whitespace Untouched
+			'U')wsenc_flag=0;;
 			#exempt variable escaping in double quotes
 			'V')exvar_flag=1;;
 			#Encoding style
@@ -55,6 +55,8 @@ function shef()(
 					esac
 				fi
 			;;
+			#whitespace only
+			'W') ws_only=1; wsenc_flag=1;enc_all=0;;
 		esac
 	done
 		
@@ -161,15 +163,15 @@ function shef()(
 		#encode special characters and whitespace characters (or not if -a)
 		case "${char}" in
 			#whitespace may be printed C-style escaped or passed through unaltered
-			$'\b')if ((wsenc_flag));then echo -En "${unq_esc}"'\b';continue; elif ! ((flag_a));then echo -n $'\b';continue;fi ;;
-			$'\f')if ((wsenc_flag));then echo -En "${unq_esc}"'\f';continue; elif ! ((flag_a));then echo -n $'\f';continue;fi ;;
-			$'\n')if ((wsenc_flag));then echo -En "${unq_esc}"'\n';continue; elif ! ((flag_a));then echo -n $'\n';continue;fi ;;
-			$'\r')if ((wsenc_flag));then echo -En "${unq_esc}"'\r';continue; elif ! ((flag_a));then echo -n $'\r';continue;fi ;;
-			$'\t')if ((wsenc_flag));then echo -En "${unq_esc}"'\t';continue; elif ! ((flag_a));then echo -n $'\t';continue;fi ;;
-			$'\v')if ((wsenc_flag));then echo -En "${unq_esc}"'\v';continue; elif ! ((flag_a));then echo -n $'\v';continue;fi ;;
+			$'\b')if ((wsenc_flag));then echo -En "${unq_esc}"'\b';continue; elif ! ((enc_all));then echo -n $'\b';continue;fi ;;
+			$'\f')if ((wsenc_flag));then echo -En "${unq_esc}"'\f';continue; elif ! ((enc_all));then echo -n $'\f';continue;fi ;;
+			$'\n')if ((wsenc_flag));then echo -En "${unq_esc}"'\n';continue; elif ! ((enc_all));then echo -n $'\n';continue;fi ;;
+			$'\r')if ((wsenc_flag));then echo -En "${unq_esc}"'\r';continue; elif ! ((enc_all));then echo -n $'\r';continue;fi ;;
+			$'\t')if ((wsenc_flag));then echo -En "${unq_esc}"'\t';continue; elif ! ((enc_all));then echo -n $'\t';continue;fi ;;
+			$'\v')if ((wsenc_flag));then echo -En "${unq_esc}"'\v';continue; elif ! ((enc_all));then echo -n $'\v';continue;fi ;;
 		esac
 
-		if ! ((flag_a)); then
+		if ! ((enc_all)); then
 			case "${char}" in
 				#always encode bell 0x07 as \a			
 				$'\a')echo -En "${unq_esc}"'\a';continue;;
@@ -190,8 +192,11 @@ function shef()(
 			esac
 		fi
 				
+		#if whitespace only our job is done here
+		((ws_only)) && { printf "%s" "${char}"; continue; }
+				
 		#encode if -a (all) OR outside printable ASCII range (less than 0x20 or greater than 0x7E)
-		if ((flag_a)) || [[ "${char}" < $'\x20' ]] || [[ "${char}" > $'\x7E' ]]; then			
+		if ((enc_all)) || [[ "${char}" < $'\x20' ]] || [[ "${char}" > $'\x7E' ]]; then			
 			#encode one of these ways
 			case "${encodeType:=$default_encoding}" in
 				#utf-8 octal \nnn (-o or -O) or \0nnn (-0)
