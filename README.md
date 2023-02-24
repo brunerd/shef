@@ -1,7 +1,7 @@
 # shef
-Shell Encoder and Formatter - Transform arbitrary text into 7-bit ASCII using a variety of shell encoding and quoting styles. Output can be used in shell scripts or passed into shell script by other tools that don't require shell quoting. Useful for systems that don't support 4-byte UTF-8 encoded characters. Encode your text with `shef` and reconstitute the original string using `echo -e` or similar methods.
+Shell Encoder and Formatter - Transform arbitrary text into 7-bit ASCII using a variety of shell encoding and quoting styles. Output can be used in shell scripts or passed into shell script by other tools that don't require shell quoting. Useful for systems that don't support 4-byte UTF-8 encoded characters. Encode your text with `shef` and reconstitute the original string using `echo -e` (bash) or just  `echo` (zsh, sh, dash).
 
-Check my blog for other musings: https://www.brunerd.com/blog/category/projects/shef
+Check my blog for more musings: https://www.brunerd.com/blog/category/projects/shef
 
 ## Help Output
 ```
@@ -113,13 +113,13 @@ $ echo -e "\xF0\x9F\x9B\x91 Stop.\n\xE2\x9A\x99\xEF\xB8\x8F Run your updates"\!"
 ```
 
 ### A Note on `zsh` and default `echo` behavior
-Watch out for `zsh` and ANSI-C quote style. By default `zsh` echo processes escaped text, the same as if `echo -e` was invoked. When using ANSI-C (aka Dollar sign quoting), it represents the actual data, no further processing is necessary. You don't want to **double** process the results, to ensure this is the case, always use `echo -E $'...'` for ANSI-C quotes. For example:
+Watch out for `zsh` and ANSI-C quote style. By default `zsh` echo processes escaped text, the same as if `echo -e` was invoked in `bash`. When using ANSI-C (aka Dollar sign quoting), that represents the actual data, no further processing is necessary. You don't want to **double** process the results, to ensure this is the case, always use `echo -E $'...'` for ANSI-C quotes in `zsh`. For example:
 ```
 #-E keeps the solidus in this\that from being processed, the tab after that needs no help
 % echo -E $'this\\that\ttab'
 this\that     tab
 
-#zsh echo processes escapes by default unlike bash and other shells
+#zsh echo processes escapes by default unlike bash and other shells, it eats the \t and leaves only hat
 % echo $'this\\that\ttab' 
 this	    hat	   tab
 ```
