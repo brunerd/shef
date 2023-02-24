@@ -12,7 +12,7 @@ LICENSE_BLOCK
 function shef()(
 	version="1.0"
 	versionLine="shef ($version) - Shell Encoder and Formatter (https://github.com/brunerd/shef)"
-	helpText='Usage: shef [options] [input]\n\nEncoding Options:\n -E <option>\n    x \\xnn utf-8 hexadecimal [DEFAULT]\n    0 \\0nnn utf-8 octal\n    o \\nnn utf-8 octal\n    U \\Unnnnnnnn code point in hexdecimal\n\n Encoding workability varies between shells:\n  Hex encoding (\\xnn) is compact and works well in bash, sh, and zsh and within a variety of quoting styles.\n  Octal encoding with leading zeroes(\\0nnn) works well across multiple shells and quote styles.\n  The other octal (\\nnn) works within ANSI-C quotes $'\''...'\'' for bash and zsh and quotes in dash.\n  Unicode code points work in bash and zsh versions 4+\n\nQuoting Options:\n -Q <option> \n    n not quoted or escaped for shell [DEFAULT]\n    d double quoted and escaped for shell\n    s single quoted and escaped for shell\n    u un-quoted and escaped for shell \n    D Dollar-sign single quoted (ANSI-C $'\'''\'') for shell\n    \n  By default only solidus \\ is escaped and character <0x20 and >0x7E encoded without enclosing quotes\n   This output is for non-shell tools that can then pass the data to shell scripts for further processing\n\n  If output is intended for use as a shell parameter or variable, then specify a quoting style\n    Quotes are included in output and all special shell characters are escaped.\n\n  The original string can usually be re-constituted using `echo -e <encoded string>`\n  Dollar sign (ANSI-C) quotes use `echo -E $'\''<string>'\''` to avoid over-processing\n\nOutput Options:\n  -a Encode all characters (overrides -U)\n  -U Leave these whitespace formatting characters raw and un-encoded: \\b \\f \\n \\r \\t \\v\n  -V Variable character $ is not escaped within double quotes\n  -v print version and exit\n  -W Encode whitespace only, pass-thru all others characters, quoting still applies\n\n  All whitespace (except space) is encoded in ANSI-C style by default\n    Bell \\a and escape \\e are always encoded.\n\nInput:\n Can be a file path, string, file redirection, here-doc, here-string, or piped input.\n \nExamples can be found at: https://github.com/brunerd/shef'
+	helpText='Output text in various quoting styles and transform Unicode into escaped UTF-8\nUsage: shef [options] [input]\n\nEncoding Style:\n -E <option>\n    x \\xnn utf-8 hexadecimal [DEFAULT]\n    0 \\0nnn utf-8 octal\n    o \\nnn utf-8 octal\n    U \\Unnnnnnnn code point in hexdecimal\n\nEncoding Options:\n Characters <0x20 and >0x7E are encoded by default\n Whitespace characters are encoded in ANSI-C style by default: \\a \\b \\e \\f \\n \\r \\t \\v \n\n  -a Encode ALL characters in the specified style\n  -P Pass-thru all characters except whitespace characters\n  -U Leave whitespace untouched and unescaped in ANSI-C style\n     Combine with -a to encode in selected octal or hex style\n\n Encoding workability varies between shells:\n  Hex encoding (\\xnn) is compact and works well in bash, zsh and sh in a variety of quoting styles.\n  Octal encoding with leading zeroes(\\0nnn) works well across multiple shells and quote styles.\n  Three digit octal (\\nnn) works in ANSI-C quotes $'\''...'\'' for bash, zsh and sh; quotes in dash.\n  Unicode code points (\\Unnnnnnnn) work in bash and zsh versions 4+\n\nQuoting Style:\n -Q <option> \n    n not quoted or escaped for shell [DEFAULT]\n    d double quoted and escaped for shell\n    s single quoted and escaped for shell\n    u un-quoted and escaped for shell \n    D Dollar-sign single quoted (ANSI-C $'\'''\'') for shell\n\n  The default quoting style (n) is for use in non-shell tools that pass arguments to scripts\n   This only escapes solidus \\ as \\\\ and does not do any escaping for special shell characters\n  If intended for use as a shell variable or argument, specify a quoting style (d,s,u,or D)\n    Output will be within specified quotes and all special shell characters are escaped.  \n\n Encoded strings can be restored with: `echo -e <encoded_string>` in bash\n  sh, zsh and dash simply use: `echo <enc_string>` (no -e argument)\n Avoid over-processing ANSI-C quotes in zsh, use: `echo -E $'\''...'\''`\n  bash, sh and dash simply use: `echo $'\''...'\''` (-E is not needed)\n\n  -V Variable character $ is not escaped when double quotes (-Qd) is selected\n     Use this to leverage command or variable substitution \n\nOther Options:\n  -v print version and exit\n\nInput:\n Can be a file path, string, file redirection, here-doc, here-string, or piped input.\n \nExamples can be found at: https://github.com/brunerd/shef'
 
 	#defaults if not specified
 	default_encoding="x"
@@ -25,7 +25,7 @@ function shef()(
 	)
 
 	#options processing	
-	while getopts ":ahvPUVWE:Q:" option; do
+	while getopts ":ahvPUVE:Q:" option; do
 		case "${option}" in
 			#encode all
 			'a')enc_all=1;;
@@ -55,8 +55,8 @@ function shef()(
 					esac
 				fi
 			;;
-			#whitespace only
-			'W') ws_only=1; wsenc_flag=1;enc_all=0;;
+			#passthru all except whitespace
+			'P') pass_thru=1; wsenc_flag=1;enc_all=0;;
 		esac
 	done
 		
@@ -175,11 +175,9 @@ function shef()(
 			case "${char}" in
 				#always encode bell 0x07 as \a			
 				$'\a')echo -En "${unq_esc}"'\a';continue;;
-			
 				#always encode escape 0x1b as \e 
 				$'\e')echo -En "${unq_esc}"'\e';continue;;
 				#FYI: bash 3.x only understands $'\e' and zsh echo cannot deal with unquoted version \\e
-
 				#process these special characters depending on the output quoting
 				'\')echo -En "${sol_esc}"'\';continue;;
 				"'")echo -En ${sinq_esc:=\'};continue;;
@@ -193,7 +191,7 @@ function shef()(
 		fi
 				
 		#if whitespace only our job is done here
-		((ws_only)) && { printf "%s" "${char}"; continue; }
+		((pass_thru)) && { printf "%s" "${char}"; continue; }
 				
 		#encode if -a (all) OR outside printable ASCII range (less than 0x20 or greater than 0x7E)
 		if ((enc_all)) || [[ "${char}" < $'\x20' ]] || [[ "${char}" > $'\x7E' ]]; then			
