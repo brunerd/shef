@@ -5,47 +5,55 @@ Check my blog for other musings: https://www.brunerd.com/blog/category/projects/
 
 ## Help Output
 ```
+shef (1.0) - Shell Encoder and Formatter (https://github.com/brunerd/shef)
+Output text in various quoting styles and transform Unicode into escaped UTF-8
 Usage: shef [options] [input]
 
-Encoding Options:
+Encoding Style:
  -E <option>
     x \xnn utf-8 hexadecimal [DEFAULT]
     0 \0nnn utf-8 octal
     o \nnn utf-8 octal
     U \Unnnnnnnn code point in hexdecimal
 
- Encoding workability varies between shells:
-  Hex encoding (\xnn) is compact and works well in bash, sh, and zsh and within a variety of quoting styles.
-  Octal encoding with leading zeroes(\0nnn) works well across multiple shells and quote styles.
-  The other octal (\nnn) works within ANSI-C quotes $'...' for bash and zsh and quotes in dash.
-  Unicode code points work in bash and zsh versions 4+
+Encoding Options:
+ Characters <0x20 and >0x7E are encoded by default
+ Whitespace characters are encoded in ANSI-C style by default: \a \b \e \f \n \r \t \v 
 
-Quoting Options:
+  -a Encode ALL characters in the specified style
+  -P Pass-thru all characters except whitespace characters
+  -U Leave whitespace untouched and unescaped in ANSI-C style
+     Combine with -a to encode in selected octal or hex style
+
+ Encoding workability varies between shells:
+  Hex encoding (\xnn) is compact and works well in bash, zsh and sh in a variety of quoting styles.
+  Octal encoding with leading zeroes(\0nnn) works well across multiple shells and quote styles.
+  Three digit octal (\nnn) works in ANSI-C quotes $'...' for bash, zsh and sh; quotes in dash.
+  Unicode code points (\Unnnnnnnn) work in bash and zsh versions 4+
+
+Quoting Style:
  -Q <option> 
     n not quoted or escaped for shell [DEFAULT]
     d double quoted and escaped for shell
     s single quoted and escaped for shell
     u un-quoted and escaped for shell 
     D Dollar-sign single quoted (ANSI-C $'') for shell
-    
-  By default only solidus \ is escaped and character <0x20 and >0x7E encoded without enclosing quotes
-   This output is for non-shell tools that can then pass the data to shell scripts for further processing
 
-  If output is intended for use as a shell parameter or variable, then specify a quoting style
-    Quotes are included in output and all special shell characters are escaped.
+  The default quoting style (n) is for use in non-shell tools that pass arguments to scripts
+   This only escapes solidus \ as \\ and does not do any escaping for special shell characters
+  If intended for use as a shell variable or argument, specify a quoting style (d,s,u,or D)
+    Output will be within specified quotes and all special shell characters are escaped.  
 
-  The original string can usually be re-constituted using `echo -e <encoded string>`
-  Dollar sign (ANSI-C) quotes use `echo -E $'<string>'` to avoid over-processing
+ Encoded strings can be restored with: `echo -e <encoded_string>` in bash
+  sh, zsh and dash simply use: `echo <enc_string>` (no -e argument)
+ Avoid over-processing ANSI-C quotes in zsh, use: `echo -E $'...'`
+  bash, sh and dash simply use: `echo $'...'` (-E is not needed)
 
-Output Options:
-  -a Encode all characters (overrides -U)
-  -U Leave these whitespace formatting characters raw and un-encoded: \b \f \n \r \t \v
-  -V Variable character $ is not escaped within double quotes
+  -V Variable character $ is not escaped when double quotes (-Qd) is selected
+     Use this to leverage command or variable substitution 
+
+Other Options:
   -v print version and exit
-  -W Encode whitespace only, pass-thru all others characters, quoting still applies
-
-  All whitespace (except space) is encoded in ANSI-C style by default
-    Bell \a and escape \e are always encoded.
 
 Input:
  Can be a file path, string, file redirection, here-doc, here-string, or piped input.
